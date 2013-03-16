@@ -29,8 +29,9 @@ import java.util.Set;
  * Time: 10:53 AM
  */
 public class JsonRecordLine extends TextLine {
-    public JsonRecordLine(Fields line) {
-        super(line);
+
+    public JsonRecordLine(Fields f) {
+        super(f);
     }
 
     private Set<String> exportedFields = null;
@@ -52,25 +53,21 @@ public class JsonRecordLine extends TextLine {
     @Override
     public void sink(FlowProcess<JobConf> flowProcess, SinkCall<Object[], OutputCollector> sinkCall) throws IOException {
         Text text = (Text) sinkCall.getContext()[ 0 ];
-        Charset charset = (Charset) sinkCall.getContext()[ 1 ];
+        //Charset charset = (Charset) sinkCall.getContext()[ 1 ];
 
         StringWriter content = new StringWriter();
         JsonWriter writer = new JsonWriter(content);
 
         writer.beginObject();
 
-
         Tuple tuple = sinkCall.getOutgoingEntry().getTuple();
+        Fields fields = sinkCall.getOutgoingEntry().getFields();
 
 
-        // This is .ALL in this case. Special case code required?
-
-        Fields fields = getSinkFields();
         int index = 0;
-        for (Comparable c: getSinkFields()) {
-            String key = c.toString();
-            writer.name(key);
-            tuple.getString(index++);
+        for (Comparable field: fields) {
+            writer.name(field.toString());
+            writer.value(tuple.getString(index++));
         }
 
         writer.endObject();
@@ -81,6 +78,8 @@ public class JsonRecordLine extends TextLine {
         // it's ok to use NULL here so the collector does not write anything
         sinkCall.getOutput().collect( null, text );
     }
+
+
 
     @Override
     protected void sourceHandleInput(SourceCall<Object[], RecordReader> sourceCall) {
@@ -121,4 +120,6 @@ public class JsonRecordLine extends TextLine {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+
 }
